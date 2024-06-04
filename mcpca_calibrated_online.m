@@ -1,29 +1,26 @@
-%% PREPARE THE WORKSPACE
+% prepare the workspace and start clean
 clear; close all; clc;
-
-% deal with some LIBTIFF conflict problems on the cloudforest platform
-setenv('DYLD_LIBRARY_PATH',['/opt/local/lib/:' getenv('DYLD_LIBRARY_PATH')]) 
 
 %% HARD CODE
 % Hard code site number, iterations, and time span here
 nrecords   = 7;               % How many lake records?
-iterations = 10000;           % How many Monte Carlo iterations?
+iterations = 100;             % How many Monte Carlo iterations? Start small until you know how long it will take!
 iyear      = [1040:5:1950]';  % Over what common time period will we do the analysis? At what resolution?
 
 % Hard code data paths here - you'll have to change these to match your system
-rootPath = [];
+rootPath = '/Users/kja/projects/africa/distribute/';
 
 % where we are now ...
-functionpath      = [rootPath,'mceof/']; cd(functionpath);
+functionpath      = [rootPath]; % cd(functionpath);
 
 % where the age model information is ...
 agemodelPath      = [rootPath,'data/agemodels'];
 
 % where the CALIB B00 files are ...
-radiocarbonPath   = [rootPath,'mceof/data/14c'];
+radiocarbonPath   = [rootPath,'data/14c'];
 
 % where the actual proxy and depth data are ...
-timeseriesPath    = [rootPath,'mceof/data/timeseries'];
+timeseriesPath    = [rootPath,'data/timeseries'];
 
 addpath(functionpath);
 
@@ -47,7 +44,7 @@ for j = 1:iterations % Loop over the Monte Carlo iterations ...
    radiocarbonfound = 0;
 
    sitename = dataFiles{i}(1:6); 
-   disp(sitename)
+   % disp(sitename)
    
    cd(timeseriesPath);
    data     = textread(dataFiles{i},'','headerlines',1); % get the time series data
@@ -89,12 +86,12 @@ for j = 1:iterations % Loop over the Monte Carlo iterations ...
           
      parfor c = 1:size(c14Files,1)
        calibrationAge(c) = str2double(c14Files{c}(end-7:end-4))
-       cd(fullradiocarbonpath)
      end % end (c) loop over individual radiocarbon files
-
+       cd(fullradiocarbonpath)
        if any(calibrationAge == ages(k,2))
         ic14 = find(calibrationAge==ages(k,2));
         radiocarbonfound = radiocarbonfound + 1;
+        
         [c14pdf,~] = readB00(c14Files{ic14});
         
         if k > 1
@@ -193,7 +190,7 @@ if i == 7
  stats = regstats(resampledAges(1:end-1),resampledDepth(1:end-1),'linear');
  yhat = floor(resampledDepth(end) * stats.beta(2) + stats.beta(1));
  resampledAges(end) = yhat;
- % ci = ceil(sqrt(stats.mse)); resampledAges(end) = floor(normrnd(yhat,ci)); % Not implemented, but can add additional error to bottom from regression statistics
+ % ci = ceil(sqrt(stats.mse)); resampledAges(end) = floor(normrnd(yhat,ci)); % Not used, but could add additional error to bottom from regression statistics
  victoriaend(j) = yhat;
 end
   
@@ -211,7 +208,7 @@ end
    
    alliters(:,i,j) = member;      
    ensemble(:,i)   = member;
-   disp(['Number of radiocarbon ages found and used: ', num2str(radiocarbonfound)])
+   % disp(['Number of radiocarbon ages found and used: ', num2str(radiocarbonfound)])
   end % end over-record (i) loop 
   
   ensemble = standardize(ensemble); % make [0,1] 
